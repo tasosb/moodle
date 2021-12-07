@@ -49,7 +49,8 @@ if (!$file) {
 }
 
 $zipper   = get_file_packer('application/zip');
-$filename = shorten_filename(clean_filename($folder->name . "-" . date("Ymd")) . ".zip");
+$foldername = format_string($folder->name, true, ["context" => $context]);
+$filename = shorten_filename(clean_filename($foldername . "-" . date("Ymd")) . ".zip");
 $temppath = make_request_directory() . $filename;
 
 if ($zipper->archive_to_pathname(array('/' => $file), $temppath)) {
