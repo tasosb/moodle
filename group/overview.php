@@ -30,18 +30,22 @@ define('OVERVIEW_NO_GROUP', -1); // The fake group for users not in a group.
 define('OVERVIEW_GROUPING_GROUP_NO_GROUPING', -1); // The fake grouping for groups that have no grouping.
 define('OVERVIEW_GROUPING_NO_GROUP', -2); // The fake grouping for users with no group.
 
-$courseid   = required_param('id', PARAM_INT);
-$groupid    = optional_param('group', 0, PARAM_INT);
+$courseid = required_param('id', PARAM_INT);
+$groupid = optional_param('group', 0, PARAM_INT);
 $groupingid = optional_param('grouping', 0, PARAM_INT);
+$download = optional_param('download', '', PARAM_ALPHA);
 
-$returnurl = $CFG->wwwroot.'/group/index.php?id='.$courseid;
-$rooturl   = $CFG->wwwroot.'/group/overview.php?id='.$courseid;
+$returnurl = $CFG->wwwroot . '/group/index.php?id=' . $courseid;
+$rooturl = $CFG->wwwroot . '/group/overview.php?id=' . $courseid;
 
-if (!$course = $DB->get_record('course', array('id'=>$courseid))) {
-    print_error('invalidcourse');
+if (!$course = $DB->get_record('course', array('id' => $courseid))) {
+    throw new moodle_exception('invalidcourse');
 }
 
-$url = new moodle_url('/group/overview.php', array('id'=>$courseid));
+$url = new moodle_url('/group/overview.php', array('id' => $courseid));
+if ($download !== '') {
+    $url->param('download', $download);
+}
 if ($groupid !== 0) {
     $url->param('group', $groupid);
 }
@@ -56,25 +60,25 @@ require_login($course);
 $context = context_course::instance($courseid);
 require_capability('moodle/course:managegroups', $context);
 
-$strgroups           = get_string('groups');
-$strparticipants     = get_string('participants');
-$stroverview         = get_string('overview', 'group');
-$strgrouping         = get_string('grouping', 'group');
-$strgroup            = get_string('group', 'group');
-$strnotingrouping    = get_string('notingrouping', 'group');
-$strfiltergroups     = get_string('filtergroups', 'group');
-$strnogroups         = get_string('nogroups', 'group');
-$strdescription      = get_string('description');
-$strnotingroup       = get_string('notingrouplist', 'group');
-$strnogroup          = get_string('nogroup', 'group');
-$strnogrouping       = get_string('nogrouping', 'group');
+$strgroups = get_string('groups');
+$strparticipants = get_string('participants');
+$stroverview = get_string('overview', 'group');
+$strgrouping = get_string('grouping', 'group');
+$strgroup = get_string('group', 'group');
+$strnotingrouping = get_string('notingrouping', 'group');
+$strfiltergroups = get_string('filtergroups', 'group');
+$strnogroups = get_string('nogroups', 'group');
+$strdescription = get_string('description');
+$strnotingroup = get_string('notingrouplist', 'group');
+$strnogroup = get_string('nogroup', 'group');
+$strnogrouping = get_string('nogrouping', 'group');
 
 // This can show all users and all groups in a course.
 // This is lots of data so allow this script more resources.
 raise_memory_limit(MEMORY_EXTRA);
 
 // Get all groupings and sort them by formatted name.
-$groupings = $DB->get_records('groupings', array('courseid'=>$courseid), 'name');
+$groupings = $DB->get_records('groupings', array('courseid' => $courseid), 'name');
 foreach ($groupings as $gid => $grouping) {
     $groupings[$gid]->formattedname = format_string($grouping->name, true, array('context' => $context));
 }
@@ -86,13 +90,13 @@ foreach ($groupings as $grouping) {
 // Groups not in a grouping.
 $members[OVERVIEW_GROUPING_GROUP_NO_GROUPING] = array();
 
-// Get all groups
-$groups = $DB->get_records('groups', array('courseid'=>$courseid), 'name');
+// Get all groups.
+$groups = $DB->get_records('groups', array('courseid' => $courseid), 'name');
 
-$params = array('courseid'=>$courseid);
+$params = array('courseid' => $courseid);
 if ($groupid) {
     $groupwhere = "AND g.id = :groupid";
-    $params['groupid']   = $groupid;
+    $params['groupid'] = $groupid;
 } else {
     $groupwhere = "";
 }
@@ -114,8 +118,8 @@ $userfieldsapi = \core_user\fields::for_identity($context)->with_userpic();
 [
     'selects' => $userfieldsselects,
     'joins' => $userfieldsjoin,
-    'params' => $userfieldsparams
-] = (array)$userfieldsapi->get_sql('u', true);
+    'params' => $userfieldsparams,
+] = (array) $userfieldsapi->get_sql('u', true);
 $extrafields = $userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]);
 $allnames = 'u.id ' . $userfieldsselects;
 
@@ -146,11 +150,11 @@ foreach ($rs as $row) {
 $rs->close();
 
 // Add 'no groupings' / 'no groups' selectors.
-$groupings[OVERVIEW_GROUPING_GROUP_NO_GROUPING] = (object)array(
+$groupings[OVERVIEW_GROUPING_GROUP_NO_GROUPING] = (object) array(
     'id' => OVERVIEW_GROUPING_GROUP_NO_GROUPING,
     'formattedname' => $strnogrouping,
 );
-$groups[OVERVIEW_NO_GROUP] = (object)array(
+$groups[OVERVIEW_NO_GROUP] = (object) array(
     'id' => OVERVIEW_NO_GROUP,
     'courseid' => $courseid,
     'idnumber' => '',
@@ -185,110 +189,361 @@ if ($groupid <= 0 && $groupingid <= 0) {
         $members[OVERVIEW_GROUPING_NO_GROUP][OVERVIEW_NO_GROUP] = $nogroupusers;
     }
 }
+if ($download === '') {
+    navigation_node::override_active_url(new moodle_url('/group/index.php', array('id' => $courseid)));
+    $PAGE->navbar->add(get_string('overview', 'group'));
 
-navigation_node::override_active_url(new moodle_url('/group/index.php', array('id'=>$courseid)));
-$PAGE->navbar->add(get_string('overview', 'group'));
+    // Print header.
+    $PAGE->set_title($strgroups);
+    $PAGE->set_heading($course->fullname);
+    $PAGE->set_pagelayout('standard');
+    echo $OUTPUT->header();
 
-/// Print header
-$PAGE->set_title($strgroups);
-$PAGE->set_heading($course->fullname);
-$PAGE->set_pagelayout('standard');
-echo $OUTPUT->header();
+    // Add tabs.
+    $currenttab = 'overview';
+    require('tabs.php');
 
-// Add tabs
-$currenttab = 'overview';
-require('tabs.php');
+    // Print overview.
+    echo $OUTPUT->heading(format_string($course->shortname, true, array('context' => $context)) . ' ' . $stroverview, 3);
 
-/// Print overview
-echo $OUTPUT->heading(format_string($course->shortname, true, array('context' => $context)) .' '.$stroverview, 3);
+    echo $strfiltergroups;
 
-echo $strfiltergroups;
-
-$options = array();
-$options[0] = get_string('all');
-foreach ($groupings as $grouping) {
-    $options[$grouping->id] = strip_tags($grouping->formattedname);
-}
-$popupurl = new moodle_url($rooturl.'&group='.$groupid);
-$select = new single_select($popupurl, 'grouping', $options, $groupingid, array());
-$select->label = $strgrouping;
-$select->formid = 'selectgrouping';
-echo $OUTPUT->render($select);
-
-$options = array();
-$options[0] = get_string('all');
-foreach ($groups as $group) {
-    $options[$group->id] = strip_tags(format_string($group->name));
-}
-$popupurl = new moodle_url($rooturl.'&grouping='.$groupingid);
-$select = new single_select($popupurl, 'group', $options, $groupid, array());
-$select->label = $strgroup;
-$select->formid = 'selectgroup';
-echo $OUTPUT->render($select);
-
-/// Print table
-$printed = false;
-foreach ($members as $gpgid=>$groupdata) {
-    if ($groupingid and $groupingid != $gpgid) {
-        if ($groupingid > 0 || $gpgid > 0) { // Still show 'not in group' when 'no grouping' selected.
-            continue; // Do not show.
-        }
+    $options = array();
+    $options[0] = get_string('all');
+    foreach ($groupings as $grouping) {
+        $options[$grouping->id] = strip_tags($grouping->formattedname);
     }
-    $table = new html_table();
-    $table->head  = array(get_string('groupscount', 'group', count($groupdata)), get_string('groupmembers', 'group'), get_string('usercount', 'group'));
-    $table->size  = array('20%', '70%', '10%');
-    $table->align = array('left', 'left', 'center');
-    $table->width = '90%';
-    $table->data  = array();
-    foreach ($groupdata as $gpid=>$users) {
-        if ($groupid and $groupid != $gpid) {
+    $popupurl = new moodle_url($rooturl . '&group=' . $groupid);
+    $select = new single_select($popupurl, 'grouping', $options, $groupingid, array());
+    $select->label = $strgrouping;
+    $select->formid = 'selectgrouping';
+    echo $OUTPUT->render($select);
+
+    $options = array();
+    $options[0] = get_string('all');
+    foreach ($groups as $group) {
+        $options[$group->id] = strip_tags(format_string($group->name));
+    }
+    $popupurl = new moodle_url($rooturl . '&grouping=' . $groupingid);
+    $select = new single_select($popupurl, 'group', $options, $groupid, array());
+    $select->label = $strgroup;
+    $select->formid = 'selectgroup';
+    echo $OUTPUT->render($select);
+
+    // Print table.
+    $printed = false;
+    foreach ($members as $gpgid => $groupdata) {
+        if ($groupingid and $groupingid != $gpgid) {
+            if ($groupingid > 0 || $gpgid > 0) { // Still show 'not in group' when 'no grouping' selected.
+                continue; // Do not show.
+            }
+        }
+        $table = new html_table();
+        $table->head = array(get_string('groupscount', 'group', count($groupdata)), get_string('groupmembers', 'group'), get_string('usercount', 'group'));
+        $table->size = array('20%', '70%', '10%');
+        $table->align = array('left', 'left', 'center');
+        $table->width = '90%';
+        $table->data = array();
+        foreach ($groupdata as $gpid => $users) {
+            if ($groupid and $groupid != $gpid) {
+                continue;
+            }
+            $line = array();
+            $name = print_group_picture($groups[$gpid], $course->id, false, true, false) . format_string($groups[$gpid]->name);
+            $description = file_rewrite_pluginfile_urls($groups[$gpid]->description, 'pluginfile.php', $context->id, 'group', 'description', $gpid);
+            $options = new stdClass;
+            $options->noclean = true;
+            $options->overflowdiv = true;
+            $line[] = $name;
+            $viewfullnames = has_capability('moodle/site:viewfullnames', $context);
+            $fullnames = array();
+            foreach ($users as $user) {
+                $displayname = fullname($user, $viewfullnames);
+                if ($extrafields) {
+                    $extrafieldsdisplay = [];
+                    foreach ($extrafields as $field) {
+                        $extrafieldsdisplay[] = s($user->{$field});
+                    }
+                    $displayname .= ' (' . implode(', ', $extrafieldsdisplay) . ')';
+                }
+
+                $fullnames[] = html_writer::link(new moodle_url('/user/view.php', ['id' => $user->id, 'course' => $course->id]),
+                    $displayname);
+            }
+            $line[] = implode(', ', $fullnames);
+            $line[] = count($users);
+            $table->data[] = $line;
+        }
+        if ($groupid and empty($table->data)) {
             continue;
         }
-        $line = array();
-        $name = print_group_picture($groups[$gpid], $course->id, false, true, false) . format_string($groups[$gpid]->name);
-        $description = file_rewrite_pluginfile_urls($groups[$gpid]->description, 'pluginfile.php', $context->id, 'group', 'description', $gpid);
-        $options = new stdClass;
-        $options->noclean = true;
-        $options->overflowdiv = true;
-        $line[] = $name;
-        $viewfullnames = has_capability('moodle/site:viewfullnames', $context);
-        $fullnames = array();
-        foreach ($users as $user) {
-            $displayname = fullname($user, $viewfullnames);
-            if ($extrafields) {
-                $extrafieldsdisplay = [];
-                foreach ($extrafields as $field) {
-                    $extrafieldsdisplay[] = s($user->{$field});
-                }
-                $displayname .= ' (' . implode(', ', $extrafieldsdisplay) . ')';
+        if ($gpgid < 0) {
+            // Display 'not in group' for grouping id == OVERVIEW_GROUPING_NO_GROUP.
+            if ($gpgid == OVERVIEW_GROUPING_NO_GROUP) {
+                echo $OUTPUT->heading($strnotingroup, 3);
+            } else {
+                echo $OUTPUT->heading($strnotingrouping, 3);
             }
-
-            $fullnames[] = html_writer::link(new moodle_url('/user/view.php', ['id' => $user->id, 'course' => $course->id]),
-                $displayname);
-        }
-        $line[] = implode(', ', $fullnames);
-        $line[] = count($users);
-        $table->data[] = $line;
-    }
-    if ($groupid and empty($table->data)) {
-        continue;
-    }
-    if ($gpgid < 0) {
-        // Display 'not in group' for grouping id == OVERVIEW_GROUPING_NO_GROUP.
-        if ($gpgid == OVERVIEW_GROUPING_NO_GROUP) {
-            echo $OUTPUT->heading($strnotingroup, 3);
         } else {
-            echo $OUTPUT->heading($strnotingrouping, 3);
+            echo $OUTPUT->heading($groupings[$gpgid]->formattedname, 3);
+            $description = file_rewrite_pluginfile_urls($groupings[$gpgid]->description, 'pluginfile.php', $context->id, 'grouping', 'description', $gpgid);
+            $options = new stdClass;
+            $options->overflowdiv = true;
+            echo $OUTPUT->box(format_text($description, $groupings[$gpgid]->descriptionformat, $options), 'generalbox boxwidthnarrow boxaligncenter');
         }
-    } else {
-        echo $OUTPUT->heading($groupings[$gpgid]->formattedname, 3);
-        $description = file_rewrite_pluginfile_urls($groupings[$gpgid]->description, 'pluginfile.php', $context->id, 'grouping', 'description', $gpgid);
-        $options = new stdClass;
-        $options->overflowdiv = true;
-        echo $OUTPUT->box(format_text($description, $groupings[$gpgid]->descriptionformat, $options), 'generalbox boxwidthnarrow boxaligncenter');
+        echo html_writer::table($table);
+        $printed = true;
     }
-    echo html_writer::table($table);
-    $printed = true;
-}
+    if (has_capability('moodle/course:managegroups', $context)) {
+        $downloadoptions = array();
+        $options = array();
+        $options["id"] = "$courseid";
+        $options["group"] = $groupid;
+        $options["grouping"] = $groupingid;
+        $options["download"] = "ods";
+        $button = $OUTPUT->single_button(new moodle_url("overview.php", $options), get_string("downloadods"));
+        $downloadoptions[] = html_writer::tag('li', $button, array('class' => 'list-inline-item'));
 
-echo $OUTPUT->footer();
+        $options["download"] = "xls";
+        $button = $OUTPUT->single_button(new moodle_url("overview.php", $options), get_string("downloadexcel"));
+        $downloadoptions[] = html_writer::tag('li', $button, array('class' => 'list-inline-item'));
+
+        $options["download"] = "txt";
+        $button = $OUTPUT->single_button(new moodle_url("overview.php", $options), get_string("downloadtext"));
+        $downloadoptions[] = html_writer::tag('li', $button, array('class' => 'list-inline-item'));
+
+        $downloadlist = html_writer::tag('ul', implode('', $downloadoptions), array('class' => 'list-inline inline'));
+        $downloadlist .= html_writer::tag('div', '', array('class' => 'clearfloat'));
+        echo html_writer::tag('div', $downloadlist, array('class' => 'downloadreport mt-1'));
+    }
+
+    echo $OUTPUT->footer();
+} else {
+    // Export groups to spreadsheets.
+    if ($download == "ods" && has_capability('moodle/course:managegroups', $context)) {
+        require_once("$CFG->libdir/odslib.class.php");
+        $extrafields = \core_user\fields::get_identity_fields($context, false);
+
+        // Calculate file name.
+        $shortname = format_string($course->shortname, true, array('context' => $context));
+        $filename = clean_filename("$shortname") . '.ods';
+        // Creating a workbook.
+        $workbook = new MoodleODSWorkbook("-");
+        // Send HTTP headers.
+        $workbook->send($filename);
+        // Creating the first worksheet.
+        $strresponses = get_string("responses", "choice");
+        $myxls = $workbook->add_worksheet($strresponses);
+
+        // Generate the data for the body of the spreadsheet.
+        $row = 0;
+        foreach ($members as $gpgid => $groupdata) {
+            if ($groupingid and $groupingid != $gpgid) {
+                if ($groupingid > 0 || $gpgid > 0) {
+                    // Still show 'not in group' when 'no grouping' selected.
+                    continue; // Do not show.
+                }
+            }
+            if ($gpgid < 0) {
+                // Display 'not in group' for grouping id == OVERVIEW_GROUPING_NO_GROUP.
+                if ($gpgid == OVERVIEW_GROUPING_NO_GROUP) {
+                    $myxls->write_string($row, 0, $strnotingroup);
+                } else {
+                    $myxls->write_string($row, 0, $strnotingrouping);
+                }
+            } else {
+                $myxls->write_string($row, 0, $strgrouping . ": " . $groupings[$gpgid]->formattedname);
+            }
+            $row++;
+            foreach ($groupdata as $gpid => $users) {
+                if ($groupid and $groupid != $gpid) {
+                    continue;
+                }
+                // Print names of all the fields.
+                $i = 0;
+                $myxls->write_string($row, 0, $strgroup . ": " . format_string($groups[$gpid]->name));
+                $row++;
+                if (count($users) === 0) {
+                    $row++;
+                    continue;
+                }
+                $myxls->write_string($row, $i++, get_string("lastname"));
+                $myxls->write_string($row, $i++, get_string("firstname"));
+
+                // Add headers for extra user fields.
+                foreach ($extrafields as $field) {
+                    $myxls->write_string($row, $i++, \core_user\fields::get_display_name($field));
+                }
+
+                $myxls->write_string($row, $i++, get_string("group"));
+                $i = 0;
+                $row++;
+                foreach ($users as $option => $userid) {
+                    $i = 0;
+                    $myxls->write_string($row, $i++, $userid->lastname);
+                    $myxls->write_string($row, $i++, $userid->firstname);
+                    foreach ($extrafields as $field) {
+                        $myxls->write_string($row, $i++, $userid->$field);
+                    }
+                    $ug2 = array();
+                    if ($usergrps = groups_get_all_groups($course->id, $userid->id)) {
+                        foreach ($usergrps as $ug) {
+                            array_push($ug2, $ug->name);
+                        }
+                    }
+                    $myxls->write_string($row, $i++, implode(",", $ug2));
+                    $row++;
+                }
+                $row++;
+            }
+        }
+        // Close the workbook.
+        $workbook->close();
+        exit;
+    }
+    if ($download == "xls" && has_capability('moodle/course:managegroups', $context)) {
+        require_once("$CFG->libdir/excellib.class.php");
+        $extrafields = \core_user\fields::get_identity_fields($context, false);
+
+        // Calculate file name.
+        $shortname = format_string($course->shortname, true, array('context' => $context));
+        $filename = clean_filename("$shortname") . '.xls';
+        // Creating a workbook.
+        $workbook = new MoodleExcelWorkbook("-");
+        // Send HTTP headers.
+        $workbook->send($filename);
+        // Creating the first worksheet.
+        $strresponses = get_string("responses", "choice");
+        $myxls = $workbook->add_worksheet($strresponses);
+
+        // Generate the data for the body of the spreadsheet.
+        $row = 0;
+        foreach ($members as $gpgid => $groupdata) {
+            if ($groupingid and $groupingid != $gpgid) {
+                if ($groupingid > 0 || $gpgid > 0) {
+                    // Still show 'not in group' when 'no grouping' selected.
+                    continue; // Do not show.
+                }
+            }
+            if ($gpgid < 0) {
+                // Display 'not in group' for grouping id == OVERVIEW_GROUPING_NO_GROUP.
+                if ($gpgid == OVERVIEW_GROUPING_NO_GROUP) {
+                    $myxls->write_string($row, 0, $strnotingroup);
+                } else {
+                    $myxls->write_string($row, 0, $strnotingrouping);
+                }
+            } else {
+                $myxls->write_string($row, 0, $strgrouping . ": " . $groupings[$gpgid]->formattedname);
+            }
+            $row++;
+            foreach ($groupdata as $gpid => $users) {
+                if ($groupid and $groupid != $gpid) {
+                    continue;
+                }
+                // Print names of all the fields.
+                $i = 0;
+                $myxls->write_string($row, 0, $strgroup . ": " . format_string($groups[$gpid]->name));
+                $row++;
+                if (count($users) === 0) {
+                    $row++;
+                    continue;
+                }
+
+                $myxls->write_string($row, $i++, get_string("lastname"));
+                $myxls->write_string($row, $i++, get_string("firstname"));
+
+                // Add extra user fields.
+                foreach ($extrafields as $field) {
+                    $myxls->write_string($row, $i++, \core_user\fields::get_display_name($field));
+                }
+
+                $myxls->write_string($row, $i++, get_string("group"));
+                $i = 0;
+                $row++;
+                foreach ($users as $option => $userid) {
+                    $i = 0;
+                    $myxls->write_string($row, $i++, $userid->lastname);
+                    $myxls->write_string($row, $i++, $userid->firstname);
+                    foreach ($extrafields as $field) {
+                        $myxls->write_string($row, $i++, $userid->$field);
+                    }
+                    $ug2 = array();
+                    if ($usergrps = groups_get_all_groups($course->id, $userid->id)) {
+                        foreach ($usergrps as $ug) {
+                            array_push($ug2, $ug->name);
+                        }
+                    }
+                    $myxls->write_string($row, $i++, implode(",", $ug2));
+                    $row++;
+                }
+                $row++;
+            }
+        }
+        // Close the workbook.
+        $workbook->close();
+        exit;
+    }
+    if ($download == "txt" && has_capability('moodle/course:managegroups', $context)) {
+        $extrafields = \core_user\fields::get_identity_fields($context, false);
+
+        // Calculate file name.
+        $shortname = format_string($course->shortname, true, array('context' => $context));
+        $filename = clean_filename("$shortname") . '.txt';
+        header("Content-Type: application/download\n");
+        header("Content-Disposition: attachment; filename=\"$filename\"");
+        header("Expires: 0");
+        header("Cache-Control: must-revalidate,post-check=0,pre-check=0");
+        header("Pragma: public");
+
+        // Generate the data for the body of the text file.
+        foreach ($members as $gpgid => $groupdata) {
+            if ($groupingid and $groupingid != $gpgid) {
+                if ($groupingid > 0 || $gpgid > 0) {
+                    // Still show 'not in group' when 'no grouping' selected.
+                    continue; // Do not show.
+                }
+            }
+            if ($gpgid < 0) {
+                // Display 'not in group' for grouping id == OVERVIEW_GROUPING_NO_GROUP.
+                if ($gpgid == OVERVIEW_GROUPING_NO_GROUP) {
+                    echo $strnotingroup . "\n";
+                } else {
+                    echo $strnotingrouping . "\n";
+                }
+            } else {
+                echo $strgrouping . ": " . $groupings[$gpgid]->formattedname . "\n";
+            }
+            foreach ($groupdata as $gpid => $users) {
+                if ($groupid and $groupid != $gpid) {
+                    continue;
+                }
+                // Echo names of all the fields.
+                echo format_string($strgroup . ": " . $groups[$gpid]->name) . "\n";
+                echo get_string("lastname") . "\t" . get_string("firstname") . "\t";
+
+                // Add extra user fields.
+                foreach ($extrafields as $field) {
+                    echo \core_user\fields::get_display_name($field) . "\t";
+                }
+
+                echo get_string("group") . "\n";
+                foreach ($users as $option => $userid) {
+                    echo $userid->lastname . "\t";
+                    echo $userid->firstname . "\t";
+                    foreach ($extrafields as $field) {
+                        echo $userid->$field . "\t";
+                    }
+                    $ug2 = array();
+                    if ($usergrps = groups_get_all_groups($course->id, $userid->id)) {
+                        foreach ($usergrps as $ug) {
+                            array_push($ug2, $ug->name);
+                        }
+                    }
+                    echo implode(",", $ug2) . "\n";
+                }
+            }
+            echo "\n";
+        }
+        exit;
+    }
+}
