@@ -33,6 +33,7 @@ define('OVERVIEW_GROUPING_NO_GROUP', -2); // The fake grouping for users with no
 $courseid   = required_param('id', PARAM_INT);
 $groupid    = optional_param('group', 0, PARAM_INT);
 $groupingid = optional_param('grouping', 0, PARAM_INT);
+$dataformat = optional_param('dataformat', '', PARAM_ALPHA);
 
 $returnurl = $CFG->wwwroot.'/group/index.php?id='.$courseid;
 $rooturl   = $CFG->wwwroot.'/group/overview.php?id='.$courseid;
@@ -186,6 +187,65 @@ if ($groupid <= 0 && $groupingid <= 0) {
     }
 }
 
+// Export groups if requested.
+if ($dataformat !== '') {
+    $columnnames = array(
+        'firstname' => get_string('firstname'),
+        'lastname' => get_string('lastname'),
+    );
+    $extrafields = \core_user\fields::get_identity_fields($context, false);
+    foreach ($extrafields as $field) {
+        $columnnames[$field] = \core_user\fields::get_display_name($field);
+    }
+    $columnnames["group"] = $strgroup;
+    $columnnames["grouping"] = $strgrouping;
+    $alldata = array();
+    // Generate file name.
+    $shortname = format_string($course->shortname, true, array('context' => $context))."_groups";
+    $i = 0;
+    foreach ($members as $gpgid => $groupdata) {
+        if ($groupingid and $groupingid != $gpgid) {
+            if ($groupingid > 0 || $gpgid > 0) {
+                // Still show 'not in group' when 'no grouping' selected.
+                continue; // Do not export.
+            }
+        }
+        if ($gpgid < 0) {
+            // Display 'not in group' for grouping id == OVERVIEW_GROUPING_NO_GROUP.
+            if ($gpgid == OVERVIEW_GROUPING_NO_GROUP) {
+                $groupingname = $strnotingroup;
+            } else {
+                $groupingname = $strnotingrouping;
+            }
+        } else {
+            $groupingname = $groupings[$gpgid]->formattedname;
+        }
+        foreach ($groupdata as $gpid => $users) {
+            if ($groupid and $groupid != $gpid) {
+                continue;
+            }
+            foreach ($users as $option => $user) {
+                $alldata[$i]['firstname'] = $user->firstname;
+                $alldata[$i]['lastname'] = $user->lastname;
+                foreach ($extrafields as $field) {
+                    $alldata[$i][$field] = $user->$field;
+                }
+                $alldata[$i]['group'] = $groups[$gpid]->name;
+                $alldata[$i]['grouping'] = $groupingname;
+                $i++;
+            }
+        }
+    }
+
+    \core\dataformat::download_data(
+        $shortname,
+        $dataformat,
+        $columnnames,
+        $alldata);
+    die;
+}
+
+// Main page content.
 navigation_node::override_active_url(new moodle_url('/group/index.php', array('id'=>$courseid)));
 $PAGE->navbar->add(get_string('overview', 'group'));
 
@@ -302,5 +362,12 @@ if (count($hoverevents)>0) {
     $PAGE->requires->string_for_js('description', 'moodle');
     $PAGE->requires->js_init_call('M.core_group.init_hover_events', array($hoverevents));
 }
+
+// Add buttons for exporting groups/groupings.
+echo $OUTPUT->download_dataformat_selector(get_string('exportgroupsgroupings', 'group'), 'overview.php', 'dataformat', [
+    'id' => $courseid,
+    'group' => $groupid,
+    'grouping' => $groupingid,
+]);
 
 echo $OUTPUT->footer();
