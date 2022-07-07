@@ -392,19 +392,22 @@ class send_user_digests extends \core\task\adhoc_task {
      */
     protected function add_message_header() {
         $site = get_site();
-
+        $a = (object) [
+            'sitefullname' => format_string($site->fullname, true, array('context' => \context_course::instance(SITEID))),
+            'siteshortname' => format_string($site->shortname, true, array('context' => \context_course::instance(SITEID))),
+        ];
         // Set the subject of the message.
-        $this->postsubject = get_string('digestmailsubject', 'forum', format_string($site->shortname, true));
+        $this->postsubject = get_string('digestmailsubject', 'forum', $a);
 
         // And the content of the header in body.
         $headerdata = (object) [
-            'sitename' => format_string($site->fullname, true),
             'userprefs' => (new \moodle_url('/user/forum.php', [
                     'id' => $this->recipient->id,
                     'course' => $site->id,
                 ]))->out(false),
             ];
 
+        $headerdata = (object) array_merge((array) $a, (array) $headerdata);
         $this->notificationtext .= get_string('digestmailheader', 'forum', $headerdata) . "\n";
 
         if ($this->allowhtml) {
