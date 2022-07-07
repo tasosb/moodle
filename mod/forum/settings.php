@@ -95,6 +95,10 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configselect('digestmailtime', get_string('digestmailtime', 'forum'),
                        get_string('configdigestmailtime', 'forum'), 17, $options));
 
+    // Default whether to show full course name in emails.
+    $settings->add(new admin_setting_configcheckbox('forum_emailfullcoursename', get_string('emailfullcoursename', 'forum'),
+                       get_string('configemailfullcoursename', 'forum'), 0));
+
     if (empty($CFG->enablerssfeeds)) {
         $options = array(0 => get_string('rssglobaldisabled', 'admin'));
         $str = get_string('configenablerssfeeds', 'forum').'<br />'.get_string('configenablerssfeedsdisabled2', 'admin');

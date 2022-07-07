@@ -126,6 +126,7 @@ $string['completionreplieshelp'] = 'requiring replies to complete';
 $string['configcleanreadtime'] = 'The hour of the day to clean old posts from the \'read\' table.';
 $string['configdigestmailtime'] = 'People who choose to have emails sent to them in digest form will be emailed the digest daily. This setting controls which time of day the daily mail will be sent (the next cron that runs after this hour will send it).';
 $string['configdisplaymode'] = 'The default display mode for discussions if one isn\'t set.';
+$string['configemailfullcoursename'] = 'Set to \'yes\' if you want the full name of the course to be displayed in E-Mail and web notifications (subject and breadcrumb) instead of the course short name. Note that this setting doesn\'t override changes in the language string \'postmailsubject\'.';
 $string['configenablerssfeeds'] = 'This switch will enable the possibility of RSS feeds for all forums.  You will still need to turn feeds on manually in the settings for each forum.';
 $string['configenabletimedposts'] = 'Set to \'yes\' if you want to allow setting of display periods when posting a new forum discussion.';
 $string['configlongpost'] = 'Any post over this length (in characters not including HTML) is considered long. Posts displayed on the site home, social format course pages, or user profiles are shortened to a natural break somewhere between the forum_shortpost and forum_longpost values.';
@@ -263,6 +264,7 @@ $string['emaildigesttype_help'] = 'The type of notification that you will receiv
 * Digest - complete posts - you will receive one digest e-mail per day containing the complete contents of each forum post;
 * Digest - subjects only - you will receive one digest e-mail per day containing just the subject of each forum post.
 ';
+$string['emailfullcoursename'] = 'Use course full name in emails';
 $string['emptymessage'] = 'Something was wrong with your post. Perhaps you left it blank, or the attachment was too big. Your changes have NOT been saved.';
 $string['errorcannotlock'] = 'You do not have the permission to lock discussions.';
 $string['errordiscussionnotfound'] = 'The discussion was not found';
@@ -527,7 +529,7 @@ $string['postincontext'] = 'See this post in context';
 $string['postmailinfo'] = 'This is a copy of a message posted in {$a}.';
 $string['postmailnow'] = '<p>This post will be mailed out immediately to all forum subscribers.</p>';
 $string['postmailreply'] = 'To reply click on this link: {$a}';
-$string['postmailsubject'] = '{$a->courseshortname}: {$a->subject}';
+$string['postmailsubject'] = '{$a->coursename}: {$a->subject}';
 $string['postrating1'] = 'Mostly separate knowing';
 $string['postrating2'] = 'Separate and connected';
 $string['postrating3'] = 'Mostly connected knowing';

@@ -478,14 +478,28 @@ class forum_post implements \renderable, \templatable {
     }
 
     /**
+     * The short name of the course that the forum is in.
+     *
+     * @return string
+     */
+    public function get_courseshortname() {
+        return format_string($this->course->shortname, true, array(
+            'context' => \context_course::instance($this->course->id),
+        ));
+    }
+
+    /**
      * The name of the course that the forum is in.
      *
      * @return string
      */
     public function get_coursename() {
-        return format_string($this->course->shortname, true, array(
-            'context' => \context_course::instance($this->course->id),
-        ));
+        global $CFG;
+
+        if (!empty($CFG->forum_emailfullcoursename)) {
+            return $this->get_coursefullname();
+        }
+        return $this->get_courseshortname();
     }
 
     /**

@@ -431,14 +431,20 @@ class send_user_digests extends \core\task\adhoc_task {
     protected function add_discussion_header($discussion, $forum, $course) {
         global $CFG;
 
-        $shortname = format_string($course->shortname, true, [
+        if (!empty($CFG->forum_emailfullcoursename)) {
+            $name = format_string($course->fullname, true, [
                 'context' => \context_course::instance($course->id),
             ]);
+        } else {
+            $name = format_string($course->shortname, true, [
+                'context' => \context_course::instance($course->id),
+            ]);
+        }
 
         $strforums = get_string('forums', 'forum');
 
         $this->discussiontext .= "\n=====================================================================\n\n";
-        $this->discussiontext .= "$shortname -> $strforums -> " . format_string($forum->name, true);
+        $this->discussiontext .= "$name -> $strforums -> " . format_string($forum->name, true);
         if ($discussion->name != $forum->name) {
             $this->discussiontext  .= " -> " . format_string($discussion->name, true);
         }
@@ -450,7 +456,7 @@ class send_user_digests extends \core\task\adhoc_task {
 
         if ($this->allowhtml) {
             $this->discussionhtml .= "<p><font face=\"sans-serif\">".
-                "<a target=\"_blank\" href=\"$CFG->wwwroot/course/view.php?id=$course->id\">$shortname</a> -> ".
+                "<a target=\"_blank\" href=\"$CFG->wwwroot/course/view.php?id=$course->id\">$name</a> -> ".
                 "<a target=\"_blank\" href=\"$CFG->wwwroot/mod/forum/index.php?id=$course->id\">$strforums</a> -> ".
                 "<a target=\"_blank\" href=\"$CFG->wwwroot/mod/forum/view.php?f=$forum->id\">" .
                         format_string($forum->name, true)."</a>";

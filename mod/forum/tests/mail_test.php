@@ -913,7 +913,7 @@ class mail_test extends \advanced_testcase {
 
         // Post a discussion to the forum.
         $subject = 'This is the very long forum post subject that somebody was very kind of leaving, it is intended to check if long subject comes in mail correctly. Thank you.';
-        $a = (object)array('courseshortname' => $course->shortname, 'forumname' => $forum->name, 'subject' => $subject);
+        $a = (object)array('coursename' => $course->shortname, 'forumname' => $forum->name, 'subject' => $subject);
         $expectedsubject = get_string('postmailsubject', 'forum', $a);
         list($discussion, $post) = $this->helper_post_to_forum($forum, $author, array('name' => $subject));
 
