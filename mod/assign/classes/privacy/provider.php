@@ -118,6 +118,7 @@ class provider implements
         $collection->add_user_preference('assign_workflowfilter', 'privacy:metadata:assignworkflowfilter');
         $collection->add_user_preference('assign_quickgrading', 'privacy:metadata:assignquickgrading');
         $collection->add_user_preference('assign_downloadasfolders', 'privacy:metadata:assigndownloadasfolders');
+        $collection->add_user_preference('assign_downloadgrouponce', 'privacy:metadata:assigndownloadgrouponce');
 
         // Link to subplugins.
         $collection->add_plugintype_link('assignsubmission', [],'privacy:metadata:assignsubmissionpluginsummary');
@@ -590,6 +591,8 @@ class provider implements
                     'bool' => true],
             'assign_quickgrading' => ['string' => get_string('privacy:metadata:assignquickgrading', 'mod_assign'), 'bool' => true],
             'assign_downloadasfolders' => ['string' => get_string('privacy:metadata:assigndownloadasfolders', 'mod_assign'),
+                    'bool' => true],
+            'assign_downloadgrouponce' => ['string' => get_string('privacy:metadata:assigndownloadgrouponce', 'mod_assign'),
                     'bool' => true]
         ];
         foreach ($assignpreferences as $key => $preference) {

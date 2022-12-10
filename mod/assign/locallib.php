@@ -3575,6 +3575,9 @@ class assign {
 
         // Build a list of files to zip.
         $filesforzipping = array();
+        // Check if groups submissions should be downloaded as one submission.
+        $downloadgrouponce = get_user_preferences('assign_downloadgrouponce', 1);
+        $seengroups = array();
         $fs = get_file_storage();
 
         $groupmode = groups_get_activity_groupmode($this->get_course_module());
@@ -3611,6 +3614,10 @@ class assign {
                     $submissiongroup = $this->get_submission_group($userid);
                     if ($submissiongroup) {
                         $groupname = $submissiongroup->name . '-';
+                        if ($downloadgrouponce && in_array($submissiongroup,$seengroups)) {
+                            continue;
+                        }
+                        array_push($seengroups,$submissiongroup);
                     } else {
                         $groupname = get_string('defaultteam', 'assign') . '-';
                     }
@@ -3618,7 +3625,11 @@ class assign {
                     $submission = $this->get_user_submission($userid, false);
                 }
 
-                if ($this->is_blind_marking()) {
+                if ($downloadgrouponce && $submissiongroup) {
+                    $prefix = str_replace('_', ' ', $groupname);
+                    $prefix = clean_filename($prefix);
+                }
+                elseif ($this->is_blind_marking()) {
                     $prefix = str_replace('_', ' ', $groupname . get_string('participant', 'assign'));
                     $prefix = clean_filename($prefix . '_' . $this->get_uniqueid_for_user($userid));
                 } else {
@@ -4502,6 +4513,7 @@ class assign {
         $quickgrading = get_user_preferences('assign_quickgrading', false);
         $showonlyactiveenrolopt = has_capability('moodle/course:viewsuspendedusers', $this->context);
         $downloadasfolders = get_user_preferences('assign_downloadasfolders', 1);
+        $downloadgrouponce = get_user_preferences('assign_downloadgrouponce', 1);
 
         $markingallocation = $this->get_instance()->markingworkflow &&
             $this->get_instance()->markingallocation &&
@@ -4535,7 +4547,8 @@ class assign {
                                           'markingallocationopt'=>$markingallocationoptions,
                                           'showonlyactiveenrolopt'=>$showonlyactiveenrolopt,
                                           'showonlyactiveenrol' => $this->show_only_active_users(),
-                                          'downloadasfolders' => $downloadasfolders);
+                                          'downloadasfolders' => $downloadasfolders,
+                                          'downloadgrouponce' => $downloadgrouponce);
 
         $classoptions = array('class'=>'gradingoptionsform');
         $gradingoptionsform = new mod_assign_grading_options_form(null,
@@ -7196,7 +7209,8 @@ class assign {
                                       'markingallocationopt' => $markingallocationoptions,
                                       'showonlyactiveenrolopt'=>$showonlyactiveenrolopt,
                                       'showonlyactiveenrol' => $this->show_only_active_users(),
-                                      'downloadasfolders' => get_user_preferences('assign_downloadasfolders', 1));
+                                      'downloadasfolders' => get_user_preferences('assign_downloadasfolders', 1),
+                                      'downloadgrouponce' => get_user_preferences('assign_downloadgrouponce', 1));
         $mform = new mod_assign_grading_options_form(null, $gradingoptionsparams);
         if ($formdata = $mform->get_data()) {
             set_user_preference('assign_perpage', $formdata->perpage);
@@ -7216,6 +7230,11 @@ class assign {
                 set_user_preference('assign_downloadasfolders', 1); // Enabled.
             } else {
                 set_user_preference('assign_downloadasfolders', 0); // Disabled.
+            }
+            if (isset($formdata->downloadgrouponce)) {
+                set_user_preference('assign_downloadgrouponce', 1); // Enabled.
+            } else {
+                set_user_preference('assign_downloadgrouponce', 0); // Disabled.
             }
             if (!empty($showonlyactiveenrolopt)) {
                 $showonlyactiveenrol = isset($formdata->showonlyactiveenrol);

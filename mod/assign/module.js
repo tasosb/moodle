@@ -162,6 +162,12 @@ M.mod_assign.init_grading_options = function(Y) {
                 Y.one('form.gradingoptionsform').submit();
             });
         }
+        var downloadgrouponceelement = Y.one('#id_downloadgrouponce');
+        if (downloadgrouponceelement) {
+            downloadgrouponceelement.on('change', function(e) {
+                Y.one('form.gradingoptionsform').submit();
+            });
+        }
     });
 };
 

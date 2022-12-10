@@ -93,6 +93,9 @@ class mod_assign_grading_options_form extends moodleform {
             $mform->addElement('checkbox', 'downloadasfolders', get_string('downloadasfolders', 'assign'), '', $dirtyclass);
             $mform->addHelpButton('downloadasfolders', 'downloadasfolders', 'assign');
             $mform->setDefault('downloadasfolders', $instance['downloadasfolders']);
+            $mform->addElement('checkbox', 'downloadgrouponce', get_string('downloadgrouponce', 'assign'), '', $dirtyclass);
+            $mform->addHelpButton('downloadgrouponce', 'downloadgrouponce', 'assign');
+            $mform->setDefault('downloadgrouponce', $instance['downloadgrouponce']);
         }
 
         // Hidden params.
